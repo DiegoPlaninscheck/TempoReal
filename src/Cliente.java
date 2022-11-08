@@ -1,51 +1,47 @@
 import java.net.*;
 import java.io.*;
-import java.util.Scanner;
 
 public class Cliente extends Thread {
 
-    static DataOutputStream ostream = null;
-    DataInputStream istream = null;
-    static String host = ""; //localhost / 10.72...
-    static int port = 9090;//porta para comunicacao. Deve ser a mesma do servidor.
-    Socket socket = null;
-    String MRcv = "";
-    static String MSnd = "";
+    BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
 
+    DatagramSocket clientSocket;
+    String servidor = "localhost";
+    int porta = 9090;
 
-    Cliente() {
+    InetAddress IPAddress;
+
+    byte[] sendData = new byte[1024];
+    byte[] receiveData = new byte[1024];
+
+    public Cliente() {
         try {
-            socket = new Socket("localhost", port);//conecta com o servidor.
-            System.out.println("Conectado....");
-            this.start();
-            //comeca uma nova thread. O metodo run é executado.
-            ostream = new DataOutputStream(socket.getOutputStream());
-            istream = new DataInputStream(socket.getInputStream());
-            Scanner console = new Scanner(System.in);
+            clientSocket = new DatagramSocket();
+
+            IPAddress = InetAddress.getByName(servidor);
 
             while (true) {
-                System.out.println("Mensagem: ");
-                String MSnd = console.nextLine();//le mensagem do console.
-                ostream.writeUTF(MSnd);//manda mensagem para o servidor.
-                ostream.flush();
+                System.out.println("Digite o texto a ser enviado ao servidor: ");
+                String sentence = inFromUser.readLine();
+                sendData = sentence.getBytes();
+
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, porta);
+
+                clientSocket.send(sendPacket);
+
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+                clientSocket.receive(receivePacket);
+                String modifiedSentence = new String(receivePacket.getData());
+                System.out.println(modifiedSentence);
             }
         } catch (Exception e) {
             System.out.println(e);
         }
     }
 
-    public void run() {
-        while (true) {
-            try {
-                MRcv = istream.readUTF();//le mensagem do servidor.
-                System.out.println("Remoto: " + MRcv);
-            } catch (Exception e) {
-            }
-        }
-    }
-
-
-    public static void main(String args[]) {
+    public static void main(String args[]) throws Exception {
         new Cliente();
+//        clientSocket.close();
     }
 }
